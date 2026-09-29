@@ -1,10 +1,10 @@
 import { Model, DataTypes } from 'sequelize';
-import type { Permission } from './Permission.js';
+import { Permission } from './permission.model.js'
 import {sequelize} from "../config/database.js"
 
 export class Role extends Model {
   declare id: number;
-  declare name: string; // 'admin', 'operador' o 'usuario'
+  declare name: string; 
 
   declare permissions?: Permission[];
 }

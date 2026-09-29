@@ -1,12 +1,10 @@
 // models/associations.ts
 import { User } from './user.model.js';
-import { Role } from './Role.model.js';
+import { Role } from './role.model.js';
 import { Permission } from './permission.model.js';
-import { Subscription } from './Suscription.model.js';
-import { Book } from './Book.model.js';
+import { Subscription } from './suscription.model.js';
+import { Book } from './book.model.js';
 import { NotificationModel } from './notification.model.js';
-
-
 
 export function setupAssociations(): void {
 
@@ -34,7 +32,7 @@ export function setupAssociations(): void {
   Subscription.belongsTo(User, { foreignKey: 'userId', as: 'user' });
   Subscription.belongsTo(Book, { foreignKey: 'bookId', as: 'book' });
 
-  
+
   User.hasMany(NotificationModel, { foreignKey: 'userId', onDelete: 'CASCADE' });
   Book.hasMany(NotificationModel, { foreignKey: 'bookId', onDelete: 'CASCADE' });
   NotificationModel.belongsTo(User, { foreignKey: 'userId', as: 'user' });

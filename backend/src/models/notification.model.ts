@@ -1,16 +1,16 @@
 import { Model, DataTypes } from 'sequelize';
 import {sequelize} from "../config/database.js"
-import type { BookStatus } from './Book.model.js'
+import type { BookStatus } from './book.model.js'
 
 // 1) LA CLASE: un aviso para un usuario cuando un libro cambia de estado
 export class NotificationModel extends Model {
   declare id: number;
-  declare userId: number;          // a quién va dirigida
-  declare bookId: number;          // de qué libro habla
+  declare userId: number;         
+  declare bookId: number;         
   declare message: string;
   declare previousStatus: BookStatus;
   declare newStatus: BookStatus;
-  declare read: boolean;           // leída o no leída
+  declare read: boolean;         
   declare createdAt: Date;
 }
 

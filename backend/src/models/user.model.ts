@@ -1,3 +1,7 @@
+import { Model, DataTypes } from 'sequelize';
+import {sequelize} from "../config/database.js"
+import type { Role } from './role.model.js'
+
 export class User extends Model {
   declare id: number;
   declare name: string;
@@ -6,7 +10,6 @@ export class User extends Model {
   declare roleId: number;
   declare createdAt: Date;
   declare updatedAt: Date;
-
   declare role?: Role;
 }
 
