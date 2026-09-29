@@ -41,3 +41,6 @@ export class Database {
     }
   }
 }
+
+export const db = Database.getInstance();
+export const sequelize = db.getConnection();

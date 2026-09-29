@@ -1,5 +1,5 @@
-import { Model, DataTypes } from 'sequelize';
-import {sequelize} from "../config/database.js"
+import { Model, DataTypes } from "sequelize";
+import { sequelize } from "../config/connectionDb.js";
 
 // 1) LA CLASE: "el usuario X sigue el libro Y"
 export class Subscription extends Model {
@@ -18,9 +18,9 @@ Subscription.init(
   },
   {
     sequelize,
-    tableName: 'subscriptions',
+    tableName: "subscriptions",
     updatedAt: false, // una suscripción no se edita
     // no se puede repetir la misma combinación usuario + libro
-    indexes: [{ unique: true, fields: ['userId', 'bookId'] }],
-  }
+    indexes: [{ unique: true, fields: ["userId", "bookId"] }],
+  },
 );
