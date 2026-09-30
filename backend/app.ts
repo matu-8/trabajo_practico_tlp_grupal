@@ -1,10 +1,8 @@
-<<<<<<< HEAD
-=======
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import "dotenv/config";
-import { testConnection } from "./src/config/connectionDb.js";
+import { Database } from "./src/config/connectionDb.js";
 
 const app = express();
 app.use(express.json());
@@ -19,8 +17,9 @@ app.use(
 const PORT: string | number = process.env.PORT || 3000;
 
 const startServer = () => {
+  const db = Database.getInstance();
   try {
-    testConnection();
+    db.testConnection();
     app.listen(PORT, () => {
       console.log(`Servidor corriendo en http://localhost:3000`);
     });
@@ -31,4 +30,3 @@ const startServer = () => {
 };
 
 startServer();
->>>>>>> origin/dev-max

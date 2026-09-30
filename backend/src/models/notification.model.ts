@@ -1,16 +1,16 @@
-import { Model, DataTypes } from 'sequelize';
-import {sequelize} from "../config/database.js"
-import type { BookStatus } from './book.model.js'
+import { Model, DataTypes } from "sequelize";
+import { sequelize } from "../config/connectionDb.js";
+import type { BookStatus } from "./book.model.js";
 
 // 1) LA CLASE: un aviso para un usuario cuando un libro cambia de estado
 export class NotificationModel extends Model {
   declare id: number;
-  declare userId: number;         
-  declare bookId: number;         
+  declare userId: number;
+  declare bookId: number;
   declare message: string;
   declare previousStatus: BookStatus;
   declare newStatus: BookStatus;
-  declare read: boolean;         
+  declare read: boolean;
   declare createdAt: Date;
 }
 
@@ -25,5 +25,5 @@ NotificationModel.init(
     newStatus: { type: DataTypes.STRING, allowNull: false },
     read: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
   },
-  { sequelize, tableName: 'notifications', updatedAt: false }
+  { sequelize, tableName: "notifications", updatedAt: false },
 );

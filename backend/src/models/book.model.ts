@@ -1,7 +1,7 @@
-import { Model, DataTypes } from 'sequelize';
-import {sequelize} from "../config/database.js"
+import { Model, DataTypes } from "sequelize";
+import { sequelize } from "../config/connectionDb.js";
 
-export type BookStatus = 'DISPONIBLE' | 'PRESTADO' | 'EN_REPARACION';
+export type BookStatus = "DISPONIBLE" | "PRESTADO" | "EN_REPARACION";
 
 export class Book extends Model {
   declare id: number;
@@ -15,15 +15,15 @@ export class Book extends Model {
 
 Book.init(
   {
-    id:          { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    title:       { type: DataTypes.STRING, allowNull: false },
-    author:      { type: DataTypes.STRING, allowNull: false },
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    title: { type: DataTypes.STRING, allowNull: false },
+    author: { type: DataTypes.STRING, allowNull: false },
     description: { type: DataTypes.TEXT, allowNull: false },
     status: {
-      type: DataTypes.ENUM('DISPONIBLE', 'PRESTADO', 'EN_REPARACION'),
+      type: DataTypes.ENUM("DISPONIBLE", "PRESTADO", "EN_REPARACION"),
       allowNull: false,
-      defaultValue: 'DISPONIBLE',
+      defaultValue: "DISPONIBLE",
     },
   },
-  { sequelize, tableName: 'books' }
+  { sequelize, tableName: "books" },
 );
