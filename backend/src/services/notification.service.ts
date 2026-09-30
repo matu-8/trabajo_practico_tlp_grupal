@@ -8,7 +8,7 @@ import type {
   NotifierFactory,
   NotifierType,
 } from "../notifications/notifierFactory.js";
-import { HttpError } from "../errors/httpError.js";
+
 
 export class NotificationService implements IObserver {
   private subscriptionRepository: ISubscriptionRepository;
@@ -61,7 +61,7 @@ export class NotificationService implements IObserver {
   async markAsRead(id: number, userId: number) {
     const updated = await this.notificationRepository.markAsRead(id, userId);
     if (!updated) {
-      throw new HttpError(404, "La notificación no existe");
+      throw new Error("La notificación no existe");
     }
   }
 }
