@@ -7,10 +7,15 @@ export interface CreateUserData {
   roleId: number;
 }
 
+export interface BasicUserData {
+  email: string;
+  password: string;
+}
+
 export interface IUserRepository {
   findAll(): Promise<User[]>;
   findById(id: number): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
-  create(data: CreateUserData): Promise<User>;
+  createUser(data: CreateUserData): Promise<User>;
   updateRole(userId: number, roleId: number): Promise<User | null>;
 }
