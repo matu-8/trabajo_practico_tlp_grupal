@@ -36,7 +36,7 @@ export class UserRepository implements IUserRepository {
     });
   }
 
-  async create(data: CreateUserData): Promise<User> {
+  async createUser(data: CreateUserData): Promise<User> {
     return User.create({ ...data });
   }
 
