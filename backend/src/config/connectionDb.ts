@@ -11,7 +11,7 @@ export class Database {
       process.env.DB_USER!,
       process.env.DB_PASSWORD!,
       {
-        host: "localhost",
+        host: process.env.DB_HOST ?? "localhost",
         dialect: process.env.DB_DIALECT as any,
       },
     );

@@ -1,14 +1,29 @@
 import { Router } from "express";
-import { UserRepository } from "../repositories/user.repository.js";
-import { AuthService } from "../services/auth.service.js";
-import { AuthController } from "../controllers/auth.controller.js";
+import { body } from "express-validator";
+import type { AuthController } from "../controllers/auth.controller.js";
+import { validate } from "../middlewares/validation.js";
 
-export const authRouter: Router = Router();
+export function createAuthRoutes(controller: AuthController): Router {
+  const router = Router();
 
-const userRepository = new UserRepository();
-const authService = new AuthService(userRepository);
-const userController = new AuthController(authService);
+  router.post(
+    "/register",
+    body("name").isString().trim().notEmpty(),
+    body("email").isEmail(),
+    body("password").isString().notEmpty(),
+    validate,
+    controller.register,
+  );
 
-authRouter.post("/auth/register", userController.register);
-authRouter.post("/auth/login", userController.login);
-authRouter.post("/auth/logout", userController.logout);
+  router.post(
+    "/login",
+    body("email").isEmail(),
+    body("password").isString().notEmpty(),
+    validate,
+    controller.login,
+  );
+
+  router.post("/logout", controller.logout);
+
+  return router;
+}

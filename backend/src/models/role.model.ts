@@ -1,4 +1,5 @@
 import { Model, DataTypes } from "sequelize";
+import type { BelongsToManySetAssociationsMixin } from "sequelize";
 import { Permission } from "./permission.model.js";
 import { sequelize } from "../config/connectionDb.js";
 
@@ -7,6 +8,7 @@ export class Role extends Model {
   declare name: string;
 
   declare permissions?: Permission[];
+  declare setPermissions: BelongsToManySetAssociationsMixin<Permission, number>;
 }
 
 Role.init(
