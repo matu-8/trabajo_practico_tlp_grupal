@@ -1,9 +1,11 @@
-import { FormEvent, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router";
 import { useForm } from "../hooks/useForm";
+import { useAuth } from "../hooks/useAuth";
 
 export const LoginPage = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
   const { email, password, onInputChange, onResetForm } = useForm({
@@ -32,11 +34,7 @@ export const LoginPage = () => {
         return;
       }
 
-      localStorage.setItem("isLogged", "true");
-      if (data.data) {
-        localStorage.setItem("user", JSON.stringify(data.data));
-      }
-
+      login(data.data);
       onResetForm();
       navigate("/home");
     } catch (err) {
@@ -78,6 +76,4 @@ export const LoginPage = () => {
   );
 };
 
-// Alias para evitar errores si se importa como Register o Login
 export const Login = LoginPage;
-export const Register = LoginPage;

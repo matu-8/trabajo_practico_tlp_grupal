@@ -1,13 +1,16 @@
 import { Navigate, Outlet } from "react-router";
+import { useAuth } from "../hooks/useAuth";
 
 export const PrivateRoutes = () => {
-  const isLogged = localStorage.getItem("isLogged");
+  const { user, isLoading } = useAuth();
 
-  return isLogged ? (
-    <>
-      <Outlet />
-    </>
-  ) : (
-    <Navigate to="/login" />
-  );
+  if (isLoading) {
+    return <div>Cargando...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
+
+  return <Outlet />;
 };

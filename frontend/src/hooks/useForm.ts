@@ -1,4 +1,4 @@
-import { useState, ChangeEvent } from 'react';
+import { useState, type ChangeEvent } from 'react';
 
 export const useForm = <T extends object>(initialForm: T) => {
   const [formState, setFormState] = useState(initialForm);

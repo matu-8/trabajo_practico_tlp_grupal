@@ -1,11 +1,15 @@
-import { Register } from "./pages/RegisterPage"
-function App() {
+import { BrowserRouter } from "react-router";
+import { AuthProvider } from "./context/AuthProvider";
+import { AppRouter } from "./routes/AppRouter";
 
+function App() {
   return (
-    <>
-      <Register/>
-    </>
-  )
+    <BrowserRouter>
+      <AuthProvider>
+        <AppRouter />
+      </AuthProvider>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;

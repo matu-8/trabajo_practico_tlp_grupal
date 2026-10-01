@@ -1,10 +1,10 @@
 
 export interface IObserver {
-update():void
+ update():void
 }
 
 export interface IBook {
-  attach():
-  detach():
+  attach(): void
+  detach(): void
   notify(): void
 }
