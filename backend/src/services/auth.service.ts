@@ -2,6 +2,7 @@ import type {
   BasicUserData,
   CreateUserData,
   IUserRepository,
+  TokenUserData,
 } from "../repositories/interfaces/user.interface.js";
 import { hashPassword, verifyPassword } from "../helpers/bcrypt.js";
 import { generateToken } from "../helpers/jwt.js";
@@ -9,7 +10,7 @@ import { generateToken } from "../helpers/jwt.js";
 export class AuthService {
   constructor(private userRepository: IUserRepository) {}
 
-  async register({ name, email, password, roleId }: CreateUserData) {
+  async register({ name, email, password }: CreateUserData) {
     const existingUser = await this.userRepository.findByEmail(email);
     if (existingUser) throw new Error("El usuario ya existe");
     const passwordHash = await hashPassword(password);
@@ -32,6 +33,7 @@ export class AuthService {
       id: user.id,
       name: user.name,
       email: user.email,
+      role: user.role,
     });
     return {
       user: {
@@ -43,4 +45,6 @@ export class AuthService {
       token,
     };
   }
+
+  // async checkAuth():TokenUserData {};
 }

@@ -54,4 +54,18 @@ export class AuthController {
       });
     }
   };
+
+  public checkAuth = (req: Request, res: Response) => {
+    const user = req.user;
+    try {
+      return res.status(200).json({
+        msg: "Usuario logeado",
+        ok: true,
+        data: user,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ msg: "Error interno del servidor", ok: false });
+    }
+  };
 }

@@ -12,6 +12,13 @@ export interface BasicUserData {
   password: string;
 }
 
+export interface TokenUserData {
+  id: number;
+  name: string;
+  email: string;
+  roleId: string;
+}
+
 export interface IUserRepository {
   findAll(): Promise<User[]>;
   findById(id: number): Promise<User | null>;
