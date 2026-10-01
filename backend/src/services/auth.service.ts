@@ -6,19 +6,26 @@ import type {
 } from "../repositories/interfaces/user.interface.js";
 import { hashPassword, verifyPassword } from "../helpers/bcrypt.js";
 import { generateToken } from "../helpers/jwt.js";
+import type { IRoleRepository } from "../repositories/interfaces/role.interface.js";
 
 export class AuthService {
-  constructor(private userRepository: IUserRepository) {}
+  constructor(
+    private userRepository: IUserRepository,
+    private roleRepository: IRoleRepository,
+  ) {}
 
-  async register({ name, email, password }: CreateUserData) {
+  async register({ name, email, password }: Omit<CreateUserData, "roleId">) {
     const existingUser = await this.userRepository.findByEmail(email);
     if (existingUser) throw new Error("El usuario ya existe");
     const passwordHash = await hashPassword(password);
+
+    const role = await this.roleRepository.findByName("usuario");
+    if (!role) throw new Error("No existe el rol usuario, ejecute la seed");
     const user = await this.userRepository.createUser({
       name,
       email,
       password: passwordHash,
-      roleId: 2,
+      roleId: role.id,
     });
     return { msg: "Usuario creado correctamente", ok: true, data: user };
   }
@@ -29,19 +36,22 @@ export class AuthService {
     const validPassword = await verifyPassword(password, user.password);
     if (!validPassword) throw new Error("Credenciales invalidas");
 
-    const token = generateToken({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-    });
-    return {
+    const userLogged = {
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
         roleId: user.roleId,
       },
+    };
+    const token = generateToken({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      roleId: user.role?.name ?? "usuario",
+    });
+    return {
+      user: userLogged,
       token,
     };
   }

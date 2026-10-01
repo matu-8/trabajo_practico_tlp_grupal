@@ -20,7 +20,6 @@ export const verifyToken = (token: string): TokenUserData => {
 
     return decoded as unknown as TokenUserData;
   } catch (error) {
-    console.error(error);
-    throw new Error("Algo salio mal al verificar el token", { cause: error });
+    throw new Error("Token inválido o vencido", { cause: error });
   }
 };

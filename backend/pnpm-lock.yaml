@@ -197,11 +197,7 @@ snapshots:
   pnpm@11.1.2: {}
 
 ---
-<<<<<<< HEAD
-lockfileVersion: "9.0"
-=======
 lockfileVersion: '9.0'
->>>>>>> origin/dev-matias
 
 settings:
   autoInstallPeers: true
