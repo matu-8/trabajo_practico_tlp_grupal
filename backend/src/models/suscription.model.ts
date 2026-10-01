@@ -1,4 +1,4 @@
-import { Model, DataTypes } from "Sequelize";
+import { Model, DataTypes } from "sequelize";
 import { sequelize } from "../config/connectionDb.js";
 
 // 1) LA CLASE: "el usuario X sigue el libro Y"

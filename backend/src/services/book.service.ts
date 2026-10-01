@@ -1,6 +1,11 @@
 import type { IBookRepository, BookData } from "../repositories/interfaces/book.interface.js";
 import type { ISubject } from "../observer/subject.js";
 import type { BookStatus } from "../models/book.model.js";
+import { HttpError } from "../errors/httpError.js";
+
+
+const VALID_STATUSES: BookStatus[] = ['DISPONIBLE', 'PRESTADO', 'EN_REPARACION'];
+
 
 export class BookService {
     constructor(
@@ -28,18 +33,21 @@ export class BookService {
     return book;
  }
 
-  // Cambiar el estado: acá se dispara el Observer
-  async changeStatus(id: number, newStatus: BookStatus) {
+async changeStatus(id: number, newStatus: BookStatus) {
+    if (!VALID_STATUSES.includes(newStatus)) {
+      throw new HttpError(400, `Estado inválido. Valores posibles: ${VALID_STATUSES.join(', ')}`);
+    }
+
     const book = await this.bookRepository.findById(id);
-    if (!book) throw new Error('El libro no existe');
+    if (!book) throw new HttpError(404, 'El libro no existe');
     const previousStatus = book.status;
 
     if (previousStatus === newStatus) {
-      throw new Error(`El libro ya está en estado ${newStatus}`);
+      throw new HttpError(400, `El libro ya está en estado ${newStatus}`);
     }
 
     const updated = await this.bookRepository.updateStatus(id, newStatus);
-    if (!updated) throw new Error('El libro no existe');
+    if (!updated) throw new HttpError(404, 'El libro no existe');
 
     await this.eventPublisher.notify({
       bookId: book.id,

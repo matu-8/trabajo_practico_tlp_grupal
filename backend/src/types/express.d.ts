@@ -1,11 +1,9 @@
+import type { TokenPayload } from '../helpers/jwt.js';
+
 declare global {
   namespace Express {
     interface Request {
-      user?: {
-        id: number;
-        name: string;
-        email: string;
-      };
+      user?: TokenPayload;
     }
   }
 }
