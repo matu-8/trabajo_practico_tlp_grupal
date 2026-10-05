@@ -1,11 +1,18 @@
-import { type FormEvent, useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
 import { useForm } from "../hooks/useForm";
+import { useAuth } from "../hooks/useAuth";
+import { getErrorMessage } from "../services/apiClient";
+import { Alert } from "../components/Alert";
+import { Button } from "../components/Button";
+import { Input } from "../components/Input";
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
+  const { register } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { name, email, password, onInputChange, onResetForm } = useForm({
     name: "",
@@ -17,77 +24,80 @@ export const RegisterPage = () => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    setIsSubmitting(true);
 
     try {
-      const response = await fetch("http://localhost:3000/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name, email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.msg || "Error al registrar usuario");
-        return;
-      }
-
-      setSuccess(data.msg || "Usuario creado correctamente");
+      const { msg } = await register({ name, email, password });
+      setSuccess(msg);
       onResetForm();
-
-      // Redirigir al login después de registrarse
-      setTimeout(() => {
-        navigate("/login");
-      }, 1500);
+      // Se espera un momento para que el usuario lea la confirmación
+      setTimeout(() => navigate("/login"), 1500);
     } catch (err) {
-      console.error(err);
-      setError("No se pudo conectar con el servidor");
+      setError(getErrorMessage(err));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <>
-      <form onSubmit={handleSubmit}>
-        <h1>Registro</h1>
+    <main className="grid min-h-screen place-items-center bg-slate-100 px-4">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-sm">
+        <h1 className="mb-6 text-center text-2xl font-bold text-slate-800">
+          Crear cuenta
+        </h1>
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        {success && <p style={{ color: "green" }}>{success}</p>}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && <Alert variant="error">{error}</Alert>}
+          {success && <Alert variant="success">{success}</Alert>}
 
-        <input
-          type="text"
-          name="name"
-          placeholder="nombre"
-          value={name}
-          onChange={onInputChange}
-          required
-        />
-        <input
-          type="email"
-          name="email"
-          placeholder="email"
-          value={email}
-          onChange={onInputChange}
-          required
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="password"
-          value={password}
-          onChange={onInputChange}
-          required
-        />
-        <button type="submit">Registrar</button>
-      </form>
+          <Input
+            label="Nombre"
+            type="text"
+            name="name"
+            placeholder="Ana"
+            value={name}
+            onChange={onInputChange}
+            autoComplete="name"
+            required
+          />
 
-      <button type="button" onClick={() => navigate("/login")}>
-        ¿Ya tiene cuenta? inicie sesión
-      </button>
-    </>
+          <Input
+            label="Email"
+            type="email"
+            name="email"
+            placeholder="ana@example.com"
+            value={email}
+            onChange={onInputChange}
+            autoComplete="email"
+            required
+          />
+
+          <Input
+            label="Contraseña"
+            type="password"
+            name="password"
+            placeholder="Mínimo 8 caracteres"
+            value={password}
+            onChange={onInputChange}
+            autoComplete="new-password"
+            minLength={8}
+            required
+          />
+
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Creando cuenta..." : "Registrarse"}
+          </Button>
+        </form>
+
+        <Button
+          type="button"
+          variant="secondary"
+          className="mt-3"
+          onClick={() => navigate("/login")}
+        >
+          ¿Ya tienes cuenta? Inicia sesión
+        </Button>
+      </div>
+    </main>
   );
 };
-
-// Alias para mantener compatibilidad con imports anteriores
-export const Register = RegisterPage;
