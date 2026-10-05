@@ -30,7 +30,11 @@ export class AuthController {
         httpOnly: true,
         maxAge: 1000 * 60 * 60,
       });
-      res.status(200).json({ msg: "bienvenido", ok: true, data: user });
+      res.status(200).json({
+        msg: "Inicio de sesión exitoso",
+        ok: true,
+        data: user,
+      });
     } catch (error) {
       res.status(401).json({ msg: "Error en el inicio de sesion", ok: false });
     }

@@ -2,17 +2,30 @@ import type {
   BasicUserData,
   CreateUserData,
   IUserRepository,
-  TokenUserData,
+  PublicUser,
 } from "../repositories/interfaces/user.interface.js";
 import { hashPassword, verifyPassword } from "../helpers/bcrypt.js";
 import { generateToken } from "../helpers/jwt.js";
 import type { IRoleRepository } from "../repositories/interfaces/role.interface.js";
+import type { User } from "../models/user.model.js";
 
 export class AuthService {
   constructor(
     private userRepository: IUserRepository,
     private roleRepository: IRoleRepository,
   ) {}
+
+  // Nunca se devuelve el modelo de Sequelize tal cual: se filtra el password.
+  // Los permisos salen de `role.permissions`, que findByEmail ya trae en el join
+  private static toPublicUser(user: User): PublicUser {
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      roleId: user.roleId,
+      permissions: user.role?.permissions?.map((p) => p.name) ?? [],
+    };
+  }
 
   async register({ name, email, password }: Omit<CreateUserData, "roleId">) {
     const existingUser = await this.userRepository.findByEmail(email);
@@ -27,7 +40,7 @@ export class AuthService {
       password: passwordHash,
       roleId: role.id,
     });
-    return { msg: "Usuario creado correctamente", ok: true, data: user };
+    return AuthService.toPublicUser(user);
   }
 
   async login({ email, password }: BasicUserData) {
@@ -36,25 +49,15 @@ export class AuthService {
     const validPassword = await verifyPassword(password, user.password);
     if (!validPassword) throw new Error("Credenciales invalidas");
 
-    const userLogged = {
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        roleId: user.roleId,
-      },
-    };
-    const token = generateToken({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      roleId: user.role?.name ?? "usuario",
-    });
+    const publicUser = AuthService.toPublicUser(user);
+
+    // El token lleva el roleId (FK numérica) para que /auth/check
+    // devuelva exactamente la misma forma que /auth/login
+    const token = generateToken(publicUser);
+
     return {
-      user: userLogged,
+      user: publicUser,
       token,
     };
   }
-
-  // async checkAuth():TokenUserData {};
 }

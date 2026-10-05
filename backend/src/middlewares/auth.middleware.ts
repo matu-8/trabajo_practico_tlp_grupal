@@ -5,17 +5,18 @@ export const authMiddleware = (
   res: Response,
   next: NextFunction,
 ) => {
+  const token = req.cookies["token"];
+  if (!token) {
+    return res.status(401).json({ ok: false, msg: "No autenticado" });
+  }
+
   try {
-    const token = req.cookies["token"];
-    if (!token) {
-      return res.status(401).json({ message: "No autenticado" });
-    }
     // Verificar y decodificar token
     const decoded = verifyToken(token);
     // Almacenar datos del usuario
     req.user = decoded;
     next();
-  } catch (error) {
-    res.status(500).json({ message: "Error interno del servidor" });
+  } catch {
+    res.status(401).json({ ok: false, msg: "Token inválido o vencido" });
   }
 };

@@ -105,7 +105,7 @@ backend/
 | **Notifications** | `notifications/` | Sistema de notificaciones con patrón **Factory** y **Strategy**. Soporta múltiples canales (in-app, consola) intercambiables. |
 | **Helpers** | `helpers/` | Funciones utilitarias transversales: hasheo de contraseñas (`bcrypt.ts`) y generación/verificación de tokens (`jwt.ts`). |
 | **Errors** | `errors/` | Clase `HttpError` para errores con código de estado HTTP y función `sendError` para manejo centralizado. |
-| **Types** | `types/` | Augmentación de tipos globales de Express (extensión de `Request` con `user?: TokenPayload`). |
+| **Types** | `types/` | Augmentación de tipos globales de Express (extensión de `Request` con `user?: TokenUserData`). |
 | **Interfaces** | `interfaces/` | Interfaces de dominio y contratos generales del sistema. |
 
 ---
@@ -345,6 +345,45 @@ Todos los endpoints están montados bajo el prefijo `/api`.
 | `POST` | `/api/auth/logout` | No | Cerrar sesión. Limpia la cookie del token |
 | `GET`  | `/api/auth/check` | **Sí** | Verificar estado de autenticación activo |
 
+### Objetos de usuario expuestos
+
+Ningún endpoint devuelve el modelo de Sequelize: `AuthService` filtra los campos
+mediante `toPublicUser()`, de modo que **el hash de la contraseña nunca viaja al
+frontend**. `PublicUser` (`src/repositories/interfaces/user.interface.ts`) es:
+
+```json
+{
+  "id": 1,
+  "name": "Ana",
+  "email": "ana@example.com",
+  "roleId": 2,
+  "permissions": ["list_users"]
+}
+```
+
+`POST /api/auth/register`, `POST /api/auth/login` y `GET /api/auth/check` devuelven
+**exactamente esta misma forma** dentro de `data`, de modo que el frontend puede
+tratarlos de forma idéntica:
+
+```json
+{ "ok": true, "msg": "Inicio de sesión exitoso", "data": { "id": 1, "name": "Ana", "email": "ana@example.com", "roleId": 2, "permissions": [] } }
+```
+
+El mismo objeto (`PublicUser`) es también el payload del JWT, que se declara como
+`TokenUserData`. Por eso `roleId` es el **id de la FK**, no el nombre del rol, y por
+eso `authorize` puede leer `req.user.permissions` sin volver a consultar la base.
+
+### Sesión por cookie
+
+El token viaja en la cookie `token` con `httpOnly: true`, `sameSite: "lax"` y una
+vigencia de 1 hora, que coincide con el `expiresIn: "1h"` del JWT. El frontend debe
+enviar las peticiones con `credentials: "include"` y el servidor responde con CORS
+habilitado para `http://localhost:5173`.
+
+`authMiddleware` extrae el token de la cookie y responde `401` tanto si falta la
+cookie (`"No autenticado"`) como si el token es inválido o venció
+(`"Token inválido o vencido"`).
+
 ### Libros
 
 | Método | Ruta | Auth | Permiso | Descripción |
@@ -430,7 +469,7 @@ Todos los endpoints están montados bajo el prefijo `/api`.
 
 ### Control de Acceso (RBAC)
 
-El sistema implementa **Role-Based Access Control** mediante la relación N:M entre `roles` y `permissions` a través de la tabla pivote `role_permissions`. Los middlewares `authenticate` y `authorize` verifican el token JWT y los permisos del usuario respectivamente.
+El sistema implementa **Role-Based Access Control** mediante la relación N:M entre `roles` y `permissions` a través de la tabla pivote `role_permissions`. El token JWT se obtiene de la cookie `httpOnly` mediante `authMiddleware` (o del header `Authorization: Bearer` mediante `authenticate`), y `authorize` valida contra `req.user.permissions`.
 
 ---
 
