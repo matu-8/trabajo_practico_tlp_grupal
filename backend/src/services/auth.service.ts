@@ -8,6 +8,7 @@ import { hashPassword, verifyPassword } from "../helpers/bcrypt.js";
 import { generateToken } from "../helpers/jwt.js";
 import type { IRoleRepository } from "../repositories/interfaces/role.interface.js";
 import type { User } from "../models/user.model.js";
+import { HttpError } from "../errors/httpError.js";
 
 export class AuthService {
   constructor(
@@ -29,7 +30,8 @@ export class AuthService {
 
   async register({ name, email, password }: Omit<CreateUserData, "roleId">) {
     const existingUser = await this.userRepository.findByEmail(email);
-    if (existingUser) throw new Error("El usuario ya existe");
+    // 409 = conflicto de negocio, no un error interno
+    if (existingUser) throw new HttpError(409, "El email ya está registrado");
     const passwordHash = await hashPassword(password);
 
     const role = await this.roleRepository.findByName("usuario");
@@ -45,9 +47,9 @@ export class AuthService {
 
   async login({ email, password }: BasicUserData) {
     const user = await this.userRepository.findByEmail(email);
-    if (!user) throw new Error("Credenciales invalidas");
+    if (!user) throw new HttpError(401, "Credenciales inválidas");
     const validPassword = await verifyPassword(password, user.password);
-    if (!validPassword) throw new Error("Credenciales invalidas");
+    if (!validPassword) throw new HttpError(401, "Credenciales inválidas");
 
     const publicUser = AuthService.toPublicUser(user);
 

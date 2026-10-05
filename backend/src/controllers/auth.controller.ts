@@ -1,5 +1,7 @@
 import type { AuthService } from "../services/auth.service.js";
 import { type Request, type Response } from "express";
+import { sendError } from "../errors/httpError.js";
+
 export class AuthController {
   constructor(private authService: AuthService) {}
 
@@ -12,11 +14,8 @@ export class AuthController {
         data: user,
       });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({
-        ok: false,
-        msg: "Error interno del servidor",
-      });
+      // sendError respeta el status del HttpError (409, etc.)
+      sendError(res, error);
     }
   };
 
@@ -28,6 +27,8 @@ export class AuthController {
       const { user, token } = await this.authService.login(req.body);
       res.cookie("token", token, {
         httpOnly: true,
+        sameSite: "lax",
+        path: "/",
         maxAge: 1000 * 60 * 60,
       });
       res.status(200).json({
@@ -36,27 +37,23 @@ export class AuthController {
         data: user,
       });
     } catch (error) {
-      res.status(401).json({ msg: "Error en el inicio de sesion", ok: false });
+      sendError(res, error);
     }
   };
 
   public logout = async (_req: Request, res: Response): Promise<void> => {
-    try {
-      res.clearCookie("token", {
-        httpOnly: true,
-        sameSite: "lax",
-      });
+    // Se usan las mismas opciones con las que se creó la cookie,
+    // porque si no el navegador no la termina eliminando
+    res.clearCookie("token", {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+    });
 
-      res.status(200).json({
-        ok: true,
-        msg: "Sesión cerrada correctamente",
-      });
-    } catch (error) {
-      res.status(500).json({
-        ok: false,
-        msg: "Error al cerrar sesión",
-      });
-    }
+    res.status(200).json({
+      ok: true,
+      msg: "Sesión cerrada correctamente",
+    });
   };
 
   public checkAuth = (req: Request, res: Response) => {
@@ -68,10 +65,13 @@ export class AuthController {
       return;
     }
 
+    // Se listan los campos a mano para no filtrar los del JWT (iat, exp)
+    const { id, name, email, roleId, permissions } = req.user;
+
     res.status(200).json({
       msg: "Usuario logeado",
       ok: true,
-      data: req.user,
+      data: { id, name, email, roleId, permissions },
     });
   };
 }
