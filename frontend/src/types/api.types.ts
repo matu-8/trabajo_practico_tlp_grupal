@@ -31,3 +31,42 @@ export interface RegisterInput {
   email: string;
   password: string;
 }
+
+// ── Libros ───────────────────────────────────────────────────
+export type BookStatus = "DISPONIBLE" | "PRESTADO" | "EN_REPARACION";
+
+export const BOOK_STATUSES: BookStatus[] = [
+  "DISPONIBLE",
+  "PRESTADO",
+  "EN_REPARACION",
+];
+
+export interface Book {
+  id: number;
+  title: string;
+  author: string;
+  description: string;
+  status: BookStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ── Suscripciones ────────────────────────────────────────────
+export interface Subscription {
+  id: number;
+  userId: number;
+  bookId: number;
+  createdAt: string;
+}
+
+// ── Notificaciones ───────────────────────────────────────────
+export interface Notification {
+  id: number;
+  userId: number;
+  bookId: number;
+  message: string;
+  previousStatus: BookStatus;
+  newStatus: BookStatus;
+  read: boolean;
+  createdAt: string;
+}
