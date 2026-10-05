@@ -67,7 +67,7 @@ El proyecto sigue una **arquitectura por capas** con separación estricta de res
 ```text
 backend/
 ├── src/
-│   ├── config/              # Configuraciones (conexión DB, Singleton pattern)
+│   ├── config/              # Conexión DB (Singleton), composition root y seed
 │   ├── controllers/         # Controladores HTTP (recepción de req/res)
 │   ├── errors/              # Clases de error personalizadas (HttpError)
 │   ├── helpers/             # Funciones utilitarias (bcrypt, jwt)
@@ -94,14 +94,14 @@ backend/
 
 | Capa | Directorio | Responsabilidad |
 |------|-----------|-----------------|
-| **Config** | `config/` | Inicialización y configuración de la base de datos. Implementa el patrón **Singleton** para garantizar una única instancia de conexión (`Database.getInstance()`). |
+| **Config** | `config/` | Inicialización de la base de datos. Implementa el patrón **Singleton** para garantizar una única instancia de conexión (`Database.getInstance()`). Contiene además el **composition root** (`container.ts`), donde se instancian y conectan todas las dependencias, y la **seed** (`seed.ts`). |
 | **Routes** | `routes/` | Mapeo de endpoints HTTP hacia controladores. Composición de middlewares en cadena (auth + validación + handler). |
 | **Middlewares** | `middlewares/` | Interceptores transversales: autenticación JWT (`authenticate`, `authMiddleware`), autorización basada en permisos RBAC (`authorize`), y validación de payloads (`validate`). |
 | **Controllers** | `controllers/` | Adaptadores HTTP: reciben `Request`, invocan al servicio correspondiente y devuelven `Response` JSON. No contienen lógica de negocio. |
 | **Services** | `services/` | Lógica de negocio pura y casos de uso. Reciben dependencias inyectadas mediante interfaces (Inversión de Dependencias). |
 | **Repositories** | `repositories/` | Acceso a datos encapsulado. Cada repositorio implementa una interfaz (`IUserRepository`, `IBookRepository`, etc.), permitiendo intercambiar el ORM/ODM sin afectar la capa de servicio. |
 | **Models** | `models/` | Definición de esquemas Sequelize y asociaciones entre entidades. Representan la estructura de las tablas en PostgreSQL. |
-| **Observer** | `observer/` | Implementación del patrón **Observer** para la publicación y suscripción a eventos de dominio (cambios de estado de libros). |
+| **Observer** | `observer/` | Implementación del patrón **Observer** para la publicación y suscripción a eventos de dominio (cambios de estado de libros). `EventPublisher` es el sujeto y `NotificationService` el observador; ambos se conectan una única vez en `config/container.ts` con `eventPublisher.attach(notificationService)`. |
 | **Notifications** | `notifications/` | Sistema de notificaciones con patrón **Factory** y **Strategy**. Soporta múltiples canales (in-app, consola) intercambiables. |
 | **Helpers** | `helpers/` | Funciones utilitarias transversales: hasheo de contraseñas (`bcrypt.ts`) y generación/verificación de tokens (`jwt.ts`). |
 | **Errors** | `errors/` | Clase `HttpError` para errores con código de estado HTTP y función `sendError` para manejo centralizado. |
@@ -138,6 +138,28 @@ backend/
 6. **Model** (`src/models/`): Representa la entidad de base de datos y sus asociaciones.
 
 ---
+
+## Composition Root
+
+`src/config/container.ts` es el **único lugar** donde se instancian repositorios y
+servicios. Las rutas solo leen del contenedor, de modo que agregar un módulo nuevo
+no obliga a tocar lo que ya funciona:
+
+```text
+Notebook
+  │
+  ├─ Repositorios:  user, role, book, subscription, notification
+  │
+  ├─ NotifierFactory(notificationRepository)
+  ├─ NotificationService(subscriptionRepository, notificationRepository, notifierFactory, ["inapp","console"])
+  │
+  ├─ EventPublisher()  ──►  attach(notificationService)   ← se conecta el Observer
+  │
+  └─ Servicios:  AuthService(userRepository, roleRepository)
+                  BookService(bookRepository, eventPublisher)
+                  SubscriptionService(subscriptionRepository, bookRepository)
+                  UserService(userRepository, roleRepository)
+```
 
 ## Módulo de Notificaciones y Patrón Observer
 
@@ -245,6 +267,35 @@ El servidor iniciará en `http://localhost:3000` (o el puerto definido en `PORT`
 
 ---
 
+## Inicialización de la Base de Datos
+
+`app.ts` ejecuta tres pasos **en este orden** antes de escuchar en el puerto:
+
+1. `testConnection()` — verifica que se pueda conectar al servidor.
+2. `setupAssociations()` — registra las relaciones entre modelos. **Debe correr
+   antes de cualquier consulta**, porque los repositorios usan `include` y
+   Sequelize lanza `SequelizeEagerLoadingError` si la asociación no existe.
+3. `sequelize.sync()` + `seed()` — crea las tablas que falten y carga los datos
+   mínimos.
+
+> ⚠️ `sequelize.sync()` es **solo para desarrollo**. En producción se usan
+> migraciones versionadas.
+
+### La seed
+
+`src/config/seed.ts` es **idempotente**: se ejecuta en cada arranque sin duplicar
+nada, porque usa `findOrCreate`. Carga:
+
+- Los 6 permisos del sistema (`list_users`, `assign_role`, `create_book`,
+  `update_book`, `change_status`, `delete_book`).
+- Los roles `usuario` (sin permisos, es el que se asigna al registrarse) y
+  `admin` (con los 6 permisos).
+- El pivote `role_permissions` del admin.
+- Un usuario admin de prueba: `admin@example.com` / `Admin1234!`
+- 5 libros de ejemplo, para que la lista y las notificaciones tengan contenido.
+
+---
+
 ## Ejecución con Docker Compose
 
 Desde el directorio **raíz del repositorio**, el backend puede levantarse junto a sus dependencias mediante Docker Compose:
@@ -320,10 +371,10 @@ Todas las respuestas de la API siguen una estructura consistente:
 | `200` | OK | Operación exitosa (GET, UPDATE, DELETE) |
 | `201` | Created | Recurso creado exitosamente (POST register, subscribe) |
 | `400` | Bad Request | Datos de entrada inválidos o lógica de negocio rechazada |
-| `401` | Unauthorized | Sin token de autenticación o token inválido/vencido |
+| `401` | Unauthorized | Sin token de autenticación, token inválido/vencido o credenciales incorrectas |
 | `403` | Forbidden | Token válido pero sin permisos para la acción (RBAC) |
 | `404` | Not Found | Recurso no encontrado |
-| `409` | Conflict | Conflicto de negocio (ej: suscripción duplicada) |
+| `409` | Conflict | Conflicto de negocio (email registrado, suscripción duplicada) |
 | `500` | Internal Server Error | Error inesperado del servidor |
 
 ### Manejo Centralizado de Errores
@@ -375,10 +426,14 @@ eso `authorize` puede leer `req.user.permissions` sin volver a consultar la base
 
 ### Sesión por cookie
 
-El token viaja en la cookie `token` con `httpOnly: true`, `sameSite: "lax"` y una
-vigencia de 1 hora, que coincide con el `expiresIn: "1h"` del JWT. El frontend debe
-enviar las peticiones con `credentials: "include"` y el servidor responde con CORS
-habilitado para `http://localhost:5173`.
+El token viaja en la cookie `token` con `httpOnly: true`, `sameSite: "lax"`,
+`path: "/"` y una vigencia de 1 hora, que coincide con el `expiresIn: "1h"` del
+JWT. El frontend debe enviar las peticiones con `credentials: "include"` y el
+servidor responde con CORS habilitado para `http://localhost:5173`.
+
+El `logout` limpia la cookie **repitiendo exactamente las mismas opciones** con las
+que se creó: si el `path` no coincide, el navegador no la elimina y la sesión
+parecería seguir activa.
 
 `authMiddleware` extrae el token de la cookie y responde `401` tanto si falta la
 cookie (`"No autenticado"`) como si el token es inválido o venció
@@ -478,6 +533,7 @@ El sistema implementa **Role-Based Access Control** mediante la relación N:M en
 | Patrón | Ubicación | Propósito |
 |--------|-----------|-----------|
 | **Singleton** | `src/config/connectionDb.ts` | Garantizar una única instancia de conexión a la base de datos |
+| **Composition Root** | `src/config/container.ts` | Instanciar y conectar todas las dependencias en un único lugar, incluido el enlace del Observer |
 | **Repository** | `src/repositories/` | Abstraer el acceso a datos detrás de interfaces, desacoplando servicios del ORM |
 | **Observer** | `src/observer/` | Desacoplar la emisión de eventos de dominio (cambio de estado) de los consumidores (notificaciones) |
 | **Factory** | `src/notifications/notifierFactory.ts` | Crear instancias de notifiers según el canal configurado |

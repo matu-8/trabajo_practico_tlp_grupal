@@ -7,6 +7,10 @@ export class Role extends Model {
   declare name: string;
 
   declare permissions?: Permission[];
+
+  // Sequelize genera este método en runtime por el belongsToMany
+  // de associations.model.ts, pero no lo declara en los tipos
+  declare setPermissions: (permissions: Permission[]) => Promise<void>;
 }
 
 Role.init(

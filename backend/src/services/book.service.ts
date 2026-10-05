@@ -17,21 +17,21 @@ export class BookService {
     return this.bookRepository.findAll();
  }
 
- async getById(id: number) {
+  async getById(id: number) {
     const book = await this.bookRepository.findById(id);
-    if (!book) throw new Error("El libro no existe");
+    if (!book) throw new HttpError(404, "El libro no existe");
     return book;
- }
+  }
 
- async create(data: BookData) {
+  async create(data: BookData) {
     return this.bookRepository.create(data);
- }
+  }
 
- async update(id: number, data: Partial <BookData>) {
+  async update(id: number, data: Partial <BookData>) {
     const book = await this.bookRepository.update(id, data);
-    if (!book) throw new Error("El libro no existe");
+    if (!book) throw new HttpError(404, "El libro no existe");
     return book;
- }
+  }
 
 async changeStatus(id: number, newStatus: BookStatus) {
     if (!VALID_STATUSES.includes(newStatus)) {
@@ -61,6 +61,6 @@ async changeStatus(id: number, newStatus: BookStatus) {
 
   async delete(id: number) {
     const deleted = await this.bookRepository.delete(id);
-    if (!deleted) throw new Error('El libro no existe');
+    if (!deleted) throw new HttpError(404, "El libro no existe");
   }
 }
