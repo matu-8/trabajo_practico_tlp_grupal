@@ -1,5 +1,5 @@
 import { Sequelize } from "sequelize";
-
+import 'dotenv/config';
 //PATRON SINGLETON
 export class Database {
   public static instance: Database;

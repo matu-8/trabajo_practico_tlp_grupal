@@ -15,10 +15,6 @@ const PERMISSIONS = [
   "delete_book",
 ] as const;
 
-// Usuario de prueba para poder verificar el control de acceso por permisos
-const ADMIN_EMAIL = "admin@example.com";
-const ADMIN_PASSWORD = "Admin1234!";
-
 interface SampleBook {
   title: string;
   author: string;
@@ -70,6 +66,15 @@ const SAMPLE_BOOKS: SampleBook[] = [
  * Es idempotente: se puede ejecutar en cada arranque sin duplicar nada.
  */
 export async function seed(): Promise<void> {
+  // dotenv ya se cargó al importar la conexión; validamos que existan las variables
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminEmail || !adminPassword) {
+    throw new Error(
+      "Faltan las variables de entorno ADMIN_EMAIL y/o ADMIN_PASSWORD",
+    );
+  }
+
   // 1) Permisos
   const permissions: Permission[] = [];
   for (const name of PERMISSIONS) {
@@ -94,12 +99,12 @@ export async function seed(): Promise<void> {
   await admin.setPermissions(permissions);
 
   // 4) Usuario admin de prueba. Se hashea solo si todavía no existe
-  const existingAdmin = await User.findOne({ where: { email: ADMIN_EMAIL } });
+  const existingAdmin = await User.findOne({ where: { email: adminEmail } });
   if (!existingAdmin) {
     await User.create({
       name: "Administrador",
-      email: ADMIN_EMAIL,
-      password: await hashPassword(ADMIN_PASSWORD),
+      email: adminEmail,
+      password: await hashPassword(adminPassword),
       roleId: admin.id,
     });
   }
