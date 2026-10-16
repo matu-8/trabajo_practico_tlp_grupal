@@ -1,6 +1,7 @@
 import { Link, Outlet, useNavigate } from "react-router";
 import { useAuth } from "../../hooks/useAuth";
 import { useNotifications } from "../../hooks/useNotifications";
+import { Can } from "../Can";
 import { Button } from "../Button";
 
 /** Estructura común de las pantallas privadas: navbar + contenido */
@@ -41,6 +42,15 @@ export const MainLayout = () => {
                 </span>
               )}
             </Link>
+
+            <Can permission="list_users">
+              <Link
+                to="/admin/users"
+                className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
+              >
+                Usuarios
+              </Link>
+            </Can>
           </div>
 
           <div className="ml-auto flex items-center gap-3">

@@ -1,13 +1,18 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useBooks } from "../hooks/useBooks";
+import { Can } from "../components/Can";
+import { BookFormModal } from "../components/books/BookFormModal";
 import { Alert } from "../components/Alert";
 import { Loader } from "../components/Loader";
+import { Button } from "../components/Button";
 import { BookStatusBadge } from "../components/books/BookStatusBadge";
 
 export const BooksPage = () => {
-  const { books, isLoading, error } = useBooks();
+  const { books, isLoading, error, reload } = useBooks();
   const [query, setQuery] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const navigate = useNavigate();
 
   const filtered = books.filter(
     (book) =>
@@ -19,7 +24,19 @@ export const BooksPage = () => {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
-      <h1 className="text-2xl font-bold text-slate-800">Libros</h1>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold text-slate-800">Libros</h1>
+
+        <Can permission="create_book">
+          <Button
+            type="button"
+            className="w-auto"
+            onClick={() => setShowCreateModal(true)}
+          >
+            + Nuevo libro
+          </Button>
+        </Can>
+      </div>
 
       <input
         type="search"
@@ -62,6 +79,17 @@ export const BooksPage = () => {
           </li>
         ))}
       </ul>
+
+      {showCreateModal && (
+        <BookFormModal
+          onClose={() => setShowCreateModal(false)}
+          onSaved={(book) => {
+            setShowCreateModal(false);
+            reload();
+            navigate(`/books/${book.id}`);
+          }}
+        />
+      )}
     </main>
   );
 };

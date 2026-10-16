@@ -51,12 +51,34 @@ export interface Book {
   updatedAt: string;
 }
 
+// Datos que envía el frontend para crear o editar un libro
+export interface BookInput {
+  title: string;
+  author: string;
+  description: string;
+}
+
 // ── Suscripciones ────────────────────────────────────────────
 export interface Subscription {
   id: number;
   userId: number;
   bookId: number;
   createdAt: string;
+}
+
+// ── Usuarios (admin) ─────────────────────────────────────────
+export interface Role {
+  id: number;
+  name: string;
+}
+
+// El listado admin trae el rol anidado, como lo arma Sequelize en el backend
+export interface AdminUser {
+  id: number;
+  name: string;
+  email: string;
+  roleId: number;
+  role: Role;
 }
 
 // ── Notificaciones ───────────────────────────────────────────

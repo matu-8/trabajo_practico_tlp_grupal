@@ -72,6 +72,17 @@ export const NotificationsProvider = ({ children }: { children: ReactNode }) => 
       return;
     }
     refresh();
+
+    // Polling periódico: la campana y el contador se mantienen al día
+    // aunque el cambio de estado venga de otro usuario (RF5)
+    const POLLING_MS = 15_000;
+    const interval = setInterval(() => {
+      refresh();
+    }, POLLING_MS);
+
+    return () => {
+      clearInterval(interval);
+    };
   }, [userId, refresh]);
 
   const markAsRead = useCallback(

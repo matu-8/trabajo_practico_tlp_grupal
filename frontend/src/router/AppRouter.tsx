@@ -7,6 +7,7 @@ import { RegisterPage } from "../pages/RegisterPage";
 import { BooksPage } from "../pages/BooksPage";
 import { BookDetailPage } from "../pages/BookDetailPage";
 import { NotificationsPage } from "../pages/NotificationsPage";
+import { AdminUsersPage } from "../pages/AdminUsersPage";
 
 export const AppRouter = () => (
   <Routes>
@@ -21,6 +22,7 @@ export const AppRouter = () => (
         <Route path="/books" element={<BooksPage />} />
         <Route path="/books/:id" element={<BookDetailPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/admin/users" element={<AdminUsersPage />} />
       </Route>
     </Route>
 
