@@ -11,6 +11,20 @@ routes → middlewares → controllers → services → repositories → models 
                                 (observer/ + notifications/ en services de dominio)
 ```
 
+Los cuatro patrones participan de un mismo flujo: el cambio de estado de
+un libro:
+
+```
+BookService.changeStatus()
+   └─> EventPublisher.notify(event)                      ← Observer (Subject)
+         └─> NotificationService.update(event)           ← Observer (Observer)
+               ├─ consulta suscriptores al repositorio   ← usa Database (Singleton)
+               └─ NotifierFactory.create('inapp')        ← Factory
+                  NotifierFactory.create('console')
+                        └─ ConsoleNotifierAdapter        ← Adapter
+                              └─ console.log
+```
+
 La instanciación de todo el grafo de dependencias se centraliza en
 `config/container.ts` y las rutas solo declaran los endpoints.
 
@@ -213,3 +227,102 @@ rutas une middlewares con el controller correspondiente.
 
 **Problema que resuelve:** punto único de entrada de las peticiones con
 despacho declarativo por recurso.
+
+---
+
+## Principios SOLID
+
+### S — Responsabilidad única
+
+Separación estricta entre las tres capas: los controllers solo traducen
+HTTP a llamadas y respuestas (`auth.controller.ts`), los services contienen
+las reglas de negocio (`subscription.service.ts`, valida duplicados antes
+de persistir), y los repositories solo acceden a la base de datos
+(`book.repository.ts`). Además, `errors/sendError()` concentra el manejo de
+errores en un solo lugar.
+
+```ts
+// repositories/book.repository.ts — solo consulta/persiste, no hay reglas de negocio
+async findById(id: number) { return Book.findByPk(id); }
+```
+
+**Problema que resuelve:** cada clase tiene una sola razón para cambiar; un
+cambio de frontend, de reglas o de base de datos modifica una capa y no
+desarma todo.
+
+### O — Abierto/cerrado
+
+Se agregan nuevos comportamientos añadiendo código, no modificando el
+existente: un canal de notificación nuevo (por ejemplo email) es una clase
+nueva que implementa `INotifier` más una opción en la fábrica, sin tocar
+`NotificationService.update()` ni el resto del servicio:
+
+```ts
+// notifications/notifierFactory.ts — extender a email solo suma un caso
+create(type: NotifierType): INotifier {
+  switch (type) {
+    case "inapp":   return new InAppNotifier(this.notificationRepository);
+    case "console": return new ConsoleNotifierAdapter();
+  }
+}
+```
+
+**Problema que resuelve:** evoluciona las salidas de notificación (o los
+roles y permisos) sin riesgo de romper la lógica ya probada del servicio.
+
+### L — Sustitución de Liskov
+
+Todas las clases que implementan `INotifier` (`InAppNotifier`,
+`ConsoleNotifierAdapter`) son intercambiables entre sí: prometen el mismo
+contrato `send(notification): Promise<void>`, por lo que el
+`NotificationService` las recorre e invoca indistintamente:
+
+```ts
+// services/notification.service.ts — no distingue qué clase concreta es
+for (const notifier of this.notifiers) {
+  await notifier.send(notification);
+}
+```
+
+**Problema que resuelve:** cualquier canal puede reemplazar a otro (o
+sumarse vía `channels: NotifierType[]`) sin cambios de comportamiento
+inesperados en quien lo consume.
+
+### I — Segregación de interfaces
+
+Cada repositorio define una interfaz chica y específica para su entidad,
+con solo las operaciones que necesita el dominio, en lugar de una interfaz
+genérica grande:
+
+```ts
+// repositories/interfaces/book.interface.ts — solo lo necesario para libros
+export interface IBookRepository {
+  findAll(): Promise<Book[]>;
+  findById(id: number): Promise<Book | null>;
+  create(data: BookData): Promise<Book>;
+  update(id: number, data: Partial<BookData>): Promise<Book | null>;
+  updateStatus(id: number, status: BookStatus): Promise<Book | null>;
+  delete(id: number): Promise<boolean>;
+}
+```
+
+**Problema que resuelve:** los servicios nunca dependen de métodos que no
+usan; cada consumidor solo ve las operaciones de su caso de uso.
+
+### D — Inversión de dependencias
+
+Los services y los subject/observers dependen de **abstracciones**
+(interfaces de repositorio y de notificador), nunca de implementaciones
+concretas; son el `container` (`config/container.ts`, composition root) y
+las rutas quienes instancian e inyectan las clases concretas por
+constructor:
+
+```ts
+// config/container.ts — la capa alta define qué implementación concreta usar
+const authService = new AuthService(userRepository, roleRepository);   // IRoleRepository/UserRepository
+const bookService = new BookService(bookRepository, eventPublisher);  // IBookRepository + ISubject
+```
+
+**Problema que resuelve:** desacopla la capa de lógica de la de
+persistencia: cambiar un repositorio (otra fuente de datos o un stub de
+testeo) no exige tocar ningún service.
