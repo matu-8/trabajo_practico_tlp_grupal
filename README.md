@@ -18,12 +18,43 @@ La sesión se mantiene con una cookie `httpOnly` y los permisos se verifican en
 el backend según el rol (usuario o admin).
 
 ## Requisitos previos
-- Node.js 20 o superior
-- PostgreSQL
-- pnpm
+- Docker y Docker Compose (para la ejecución con Docker)
+- Node.js 20 o superior + pnpm (para la ejecución local)
 - Git
 
-## Cómo ejecutar el proyecto
+## Ejecución con Docker (recomendado)
+
+Levanta la base de datos (PostgreSQL), el backend y el frontend completos,
+con el seed de roles, permisos, usuarios y libros de ejemplo ejecutándose en
+forma automática al iniciar:
+
+1. Clonar el repositorio:
+   ```bash
+   git clone [url]
+   cd practica_integradora_tlp_grupal
+   ```
+2. Copiar variables de entorno desde `.env.example` a `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+3. Construir y levantar los tres servicios:
+   ```bash
+   docker compose up --build
+   ```
+4. Abrir la aplicación:
+   - Frontend: http://localhost:5173
+   - API:      http://localhost:3000/api
+
+Notas:
+- El backend espera a que PostgreSQL esté saludable antes de arrancar
+  (`healthcheck` + `depends_on: service_healthy`).
+- Los datos persisten en el volumen Docker `pgdata`; al hacer
+  `docker compose down` y `up` los datos se conservan. Para borrarlos
+  del todo: `docker compose down -v`.
+- Para developing en el frontend remoto el `VITE_API_URL` del `.env`
+  apunta por defecto a `http://localhost:3000/api`.
+
+## Cómo ejecutar el proyecto (sin Docker)
 
 1. Clonar el repositorio:
    ```bash
@@ -54,10 +85,11 @@ el backend según el rol (usuario o admin).
    - API: http://localhost:3000/api
 
 ## Ejecución sin Docker
-El proyecto se ejecuta sin Docker: el backend y el frontend se levantan por
-separado con `pnpm dev` desde su carpeta, tal como se describe arriba.
+Si no se usa Docker, el backend y el frontend se levantan por separado con
+`pnpm dev` desde su carpeta (requiere PostgreSQL corriendo local y un
+`backend/.env` desde `backend/.env.example`), tal como se describe arriba.
 
-## Variables de entorno
+## Variables de entorno (Docker: `.env` en la raíz desde `.env.example`)
 
 | Variable | Descripción | Ejemplo |
 |---|---|---|
